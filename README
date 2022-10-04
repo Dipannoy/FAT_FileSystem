@@ -1,0 +1,92 @@
+In this project, I have implemented all 12 functions of the file system. All functions work properly.
+
+1. int make_fs(char *disk_name)
+
+===> make_disk and open_disk apis have been called. Upon successful execution of those functions, the superblock, fat blocks, directory have been
+initialized.After successful initialization, those meta information have been written in the disk. The first block of the disk has been used for 
+the superblock. Next 4094 blocks have been used for the fat blocks. However, for my FAT structure, only 8 blocks of the 4094 have been used. Those
+8 blocks of the disk are populated with the necessary 4096 FAT blocks. The 4096th block of the disk has been used for the file directory. No operation 
+has been made over the remaining 4096 blocks which have been kept for the data.
+
+
+2. int mount_fs(char *disk_name)
+
+===> Initially, open_disk function has been called based on the current status[if it is closed] of the disk. The meta information have been read from
+the disk with block_read. Subsequent write operation in the memory has been performed after the successful execution of block_read. At the end of the 
+function file descriptor table has been initialized in the memory. If there already exists a file descriptor, then the only update has been done for the valid file 
+descriptor. Basically, valid file descriptors have been made active which were made inactive in the unmount operation.
+
+
+3. int umount_fs(char *disk_name)
+
+===> All the metadata like superblock, fatblocks, directory have been written in the disk from memory. The allocated spaces for the those 3
+data structures have been freed. Next, the active bits of the file descriptor table have been turned to 0 which will prevent making any operation
+using those file descriptors. Then, the disk has been closed. Upon the successful completion of close_disk, it has been reported that no disk is 
+open now. It will help to track the next open_disk operation for the mount_fs.
+
+4. int fs_open(char *name)
+
+===> At first, this function checks whether any file is created with the name in the directory. If the answer is yes, then an entry is created
+in the file descriptor for the corresponding file name. The active status is set to 1 which means the file is ready to read, write and other
+operations. A mapping has been made with the directory and file descriptor by the fileDirectoryIndex which will be found in the file descriptor 
+objects. 
+
+
+5. int fs_close(int fildes)
+
+===> At first, this function checks whether the fildes is valid or not. After successful validation, the active status is turned into 1 if
+it was 0 before calling the function. Besides, all the information for the corresponding file descriptor have been reset.
+
+ 
+6. int fs_create(char *name)
+
+===> Initially, the required validation has been done over file name length, file duplicacy. If the validation is successful, a new entry is created
+with the given name in the directory table. Finally, fs_open is called to initialize the file descriptor with necessary information. After that,
+this file becomes ready for the next operations.
+
+
+7. int fs_delete(char *name)
+
+===> If any descriptor remains active for the corresponding file name during the call of fs_delete, this function returns without doing anything.
+Otherwise, the existing information in the directory for the file have been erased. Then its occupied blocks have been identified from the first 
+dataBlockIndex which is found in the directory. The next blocks for the occupied blocks have been made -1 and isFree bit is set to 1. From then,
+those blocks can be used by other files.
+
+
+8. int fs_read(int fildes, void *buf, size_t nbyte)
+
+===> At first, the validation has been checked over the fildes. Then necessary values have been calculated. From which block, the read will start
+has been identified. Here, the file pointer/offset has been used. What I have done, I have read all available blocks from the starting block.
+After that, the required/feasible byte has been read from that full read buffer. This required/feasible byte has been counted using the file length,
+offset and n_byte.
+
+
+9. int fs_write(int fildes, void *buf, size_t nbyte)
+
+===> After checking all validation, the current fat blocks have been identified for the file represented by the fildes. Then if there is any space
+in the existing blocks, the new bytes have been tried to write there. After writing in the existing blocks, if any bytes are left, new blocks are
+searched to write those remaining bytes. Here, the first task was to find how many new blocks will be required to write those remaining bytes. If the
+file system has enough free blocks, all those remaining bytes can be written. Otherwise, according to the number of free blocks, the number of bytes 
+will be selected which can be accommodated.
+
+
+10. int fs_get_filesize(int fildes)
+
+===> If the fildes is valid, this function returns the file size for the fildes. It has been collected from the directory.
+
+
+11. int fs_lseek(int fildes, off_t offset)
+
+===> Initially all required validation have been done over fildes, filesize, and offset. If the validation is successful, the offset of the
+the corresponding file has been set to the input offset.     
+
+
+12. int fs_truncate(int fildes, off_t length)
+
+===> At first, the validation of fildes has been checked. Then if the given length is smaller or equal to the file size, the next operations have been
+done. The next operations include finding the existing data blocks for the corresponding file. Then the data has been erased from those blocks.
+If it is necessary to free the blocks, it has also been done by setting the isFree bit to 1. Finally, the file size and offset have been updated.
+
+
+In the test.c I have written a series of file system functions which cover all functions of the specifications.
+The functions have been tested in details. Here, only the output of each function has been printed.
